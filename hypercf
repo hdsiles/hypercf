@@ -91,7 +91,6 @@ class Consumer(multiprocessing.Process):
         while True:
             next_task = self.task_queue.get()
             if next_task is None:
-            # Poison pill means we should exit
                 break
             answer = next_task()
             self.result_queue.put(answer)
@@ -224,32 +223,6 @@ def deleteObjects(path, dlCount):
     headers = {'X-Auth-Token': authdata['token'],  'Connection': 'Keep-Alive'}
     reqObj = Requests(container)
     resp = reqObj.makeRequest(url, headers, requests.delete)
-
-
-
-#----------------------------------------------------------------------
-def bulkDeleteObjects(body):
-    """
-        Functionality not fully implimented in API yet
-    """
-    global authdata
-    global authority
-    container = args.cont
-    #if args.quiet:
-    #    pass
-    #elif args.verbose:
-    #    print ("%s of %s: %s" % (dlCount, objTotal, body))
-    #else:
-    #    print ("# Deleting: %s of %s     \r" % (dlCount, objTotal)),
-    dellist = []
-    for objpath in body:
-        dellist.append(container + '/' + objpath)
-    delbody = "\n".join(map(str, dellist))
-    url = (authority + '/' + urllib2.quote(container))
-    headers = {'X-Auth-Token': authdata['token'],  'Connection': 'Keep-Alive', 'Content-Type': 'text/plain'}
-    reqObj = Requests(container)
-    resp = reqObj.makeRequest(url, headers, requests.delete, data=delbody)
-
 
 #----------------------------------------------------------------------
 def deleteContainer():
@@ -432,7 +405,7 @@ if __name__ == "__main__":
     #------ Calculate Cpu Info ----------------------------------------------
     cpu_num =  int(multiprocessing.cpu_count())
     up_dn_def = (cpu_num * 2)
-    ls_del_def = (cpu_num * 20)
+    ls_del_def = (cpu_num * 10)
 
 
     #------ Passed Arguments ------------------------------------------------
@@ -441,31 +414,25 @@ if __name__ == "__main__":
     parser.add_argument('-k', '--key', required=True, help='Account API-KEY')
     parser.add_argument('-r', '--reg', required=True, choices=['dfw', 'lon', 'ord', 'syd'], help='Region / DataCenter')
     parser.add_argument('-s', '--snet', action='store_true', help='Use ServiceNet, aka 10.x.x.x addresses, instead of public')
-
     display_group = parser.add_mutually_exclusive_group()
     display_group.add_argument('-v', '--verbose', action='store_true', help='Show more data')
     display_group.add_argument('-q', '--quiet', action='store_true', help='Show only errors')
-
     subparsers = parser.add_subparsers(dest='subparser_name', help='Action sub-command choices')
     parser_dn = subparsers.add_parser('dn', help='Download from Cloud Files to this machine')
     parser_up = subparsers.add_parser('up', help='Upload from this machine to Cloud Files')
     parser_ls = subparsers.add_parser('ls', help='List objects in selected Cloud Files container')
     parser_del = subparsers.add_parser('del', help='Delete all objects and the container. Type carefully!')
     parser_copy = subparsers.add_parser('copy', help='Copy all objects from one container to another container.')
-
     parser_dn.add_argument('-d', '--dir', required=True, help='The base directory that all files will be put into')
     parser_dn.add_argument('-c', '--cont', required=True, help='Container name to download files from')
     parser_dn.add_argument('-p', '--proc', type=IntRange(1, 201), default=up_dn_def, help='1-200 concurrent procs, (default: %(default)s)')
-
     parser_up.add_argument('-d', '--dir', required=True, help='The directory and everything recursivly added to specified container')
     parser_up.add_argument('-c', '--cont', required=True, help='Container name to download files from.')
     parser_up.add_argument('-p', '--proc', type=IntRange(1, 101), default=up_dn_def, help='1-100 concurrent procs, (default: %(default)s)')
-
     parser_ls.add_argument('-l', '--long', action='store_true', help='Long or detailed info, like from the *nix commandline')
     parser_ls.add_argument('-g', '--grep', help='Filter results. Handy with the -l flag')
     parser_ls.add_argument('-c', '--cont', help='Container name to list objects from')
     parser_ls.add_argument('-p', '--proc', type=IntRange(1, 401), default=ls_del_def, help='1-400 concurrent procs, (default: %(default)s)')
-
     parser_del.add_argument('-c', '--cont', required=True, help='Container name to delete.')
     parser_del.add_argument('-p', '--proc', type=IntRange(1, 401), default=ls_del_def, help='1-400 concurrent procs, (default: %(default)s)')
 
@@ -479,7 +446,6 @@ if __name__ == "__main__":
     region = authdata['region'].split('/')[2]
     authority = ('https://' + region + '/v1/' + authdata['tenantid']) 
 
-
     # ___ Download from container to localhost ___
     if (args.subparser_name == 'dn'):
         if not os.path.isdir(args.dir):
@@ -488,7 +454,6 @@ if __name__ == "__main__":
         objectlist = collectContainerObjects()
         if objectlist:
             jobSpooler(downloadObjects, objectlist)
-
 
     # ___ Container or Object lists ___
     if (args.subparser_name == 'ls'):
@@ -523,26 +488,12 @@ if __name__ == "__main__":
                             continue
                         print cont
 
-
     # ___ Upload from localhost to Container ___
     if (args.subparser_name == 'up'):
         localfiles = collectFileData(args.dir)
         objTotal = len(localfiles)
         createContainer()
         jobSpooler(uploadObjects, localfiles)
-
-    ## ___ Bulk Delete container and objects ___
-    #if (args.subparser_name == 'del'):
-    #    objectlist = collectContainerObjects()
-    #    if objectlist:
-    #        sublist = []
-    #        for objpath in objectlist:
-    #            sublist.append(objpath.decode('utf-8'))
-    #            if objpath == objectlist[-1] or len(sublist) == 10000:
-    #                bulkDeleteObjects(sublist)
-    #                sublist[:] = []
-    #    #deleteContainer()
-
 
     # ___ Delete container and objects ___
     if (args.subparser_name == 'del'):
