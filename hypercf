@@ -1,4 +1,4 @@
-#!/usr/bin/env python -u
+#!/usr/bin/python -u
 #!*-* coding:utf-8 *-*
 
 import argparse
@@ -193,7 +193,7 @@ def downloadObjects(path, dlCount):
     elif args.verbose:
         print ("%s of %s: %s" % (dlCount, objTotal, fullpath))
     else:
-        print ("# D/L of object: %s of %s     \r" % (dlCount, objTotal)),
+        print ("# D/L of object: %s of %s                        \r" % (dlCount, objTotal)),
     try:
         os.makedirs(dirpath)
     except OSError:
@@ -217,7 +217,7 @@ def deleteObjects(path, dlCount):
     elif args.verbose:
         print ("%s of %s: %s" % (dlCount, objTotal, path))
     else:
-        print ("# Deleting: %s of %s     \r" % (dlCount, objTotal)),
+        print ("# Deleting: %s of %s                             \r" % (dlCount, objTotal)),
 
     url = (authority + '/' + urllib2.quote(container) + '/' + path)
     headers = {'X-Auth-Token': authdata['token'],  'Connection': 'Keep-Alive'}
@@ -253,7 +253,7 @@ def uploadObjects(path, progressCount):
     elif args.verbose:
         print ("%s of %s: %s" % (progressCount, objTotal, path))
     else:
-        print ("# U/L of objects: %s of %s     \r" % (progressCount, objTotal)),
+        print ("# U/L of objects: %s of %s                       \r" % (progressCount, objTotal)),
 
     urlfile = path
     if urlfile.startswith('/'):
@@ -404,8 +404,8 @@ if __name__ == "__main__":
 
     #------ Calculate Cpu Info ----------------------------------------------
     cpu_num =  int(multiprocessing.cpu_count())
-    up_dn_def = (cpu_num * 2)
-    ls_del_def = (cpu_num * 10)
+    up_dn_def = (cpu_num * 3)
+    ls_del_def = (cpu_num * 15)
 
 
     #------ Passed Arguments ------------------------------------------------
