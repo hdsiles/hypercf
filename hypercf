@@ -245,9 +245,9 @@ def uploadObjects(path, progressCount):
     global authdata
     global authority
     global objTotal 
-    root_dir = args.dir
+    #root_dir = args.dir
     container = args.cont
-    fullpath = (root_dir + '/' + container + '/' + path)
+    #fullpath = (root_dir + '/' + container + '/' + path)
     if args.quiet:
         pass
     elif args.verbose:

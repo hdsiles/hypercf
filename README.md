@@ -53,13 +53,13 @@ List:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls -c test
 
     expected output:
-        /example/path/078_max.jpg
-        /example/path/083_max.jpg
-        /example/path/093_max.jpg
-        /example/path/095_max.jpg
-        /example/path/096_max.jpg
-        /example/path/0IYXX.jpg
-        /example/path/0JSAnbM.jpg
+        example/path/078_max.jpg
+        example/path/083_max.jpg
+        example/path/093_max.jpg
+        example/path/095_max.jpg
+        example/path/096_max.jpg
+        example/path/0IYXX.jpg
+        example/path/0JSAnbM.jpg
 
 
     Long list of object in 'test' container:
