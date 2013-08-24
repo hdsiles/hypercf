@@ -31,7 +31,6 @@ while, or for loops etc...
 Examples of use
 
 List:
-
     Simple list of containers:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls
 
@@ -84,7 +83,6 @@ List:
 
 
 Download:
-
     Download 'test' container to /home/user/mycontainer
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord dn -c test -d /home/user/mycontainer
 
@@ -107,7 +105,6 @@ Download:
 
 
 Upload:
-
     Using the example/path structure above with full path:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord up -c newcontainer -d /home/user/mycontainer
 
@@ -143,7 +140,6 @@ Upload:
 
 
 Delete:
-
     Delete the newcontainer and all the files:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord del -c newcontainer
 
@@ -152,14 +148,12 @@ Delete:
 
 
 Copy (container to container):
-
     Note: This feature has not yet been implemented.
 
 
 
 
 Advanced usage:
-
     Download multiple containers to mycontainers dir:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls | while read cont;do hypercf -u username -k qwerty123456abcdefghij09876 -r ord dn -c $cont -d /home/user/mycontainer;done
 
