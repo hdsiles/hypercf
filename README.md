@@ -28,7 +28,7 @@ The intended output is supposed to be very basic so that the output can be piped
 while, or for loops etc...
 
 
-Examples of use:
+Examples of use...
 
 List:
     Simple list of containers:
