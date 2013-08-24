@@ -30,8 +30,7 @@ while, or for loops etc...
 
 Examples of use
 
-    List:
-        ls                  List objects in selected Cloud Files container
+List:
 
     Simple list of containers:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls
@@ -84,9 +83,7 @@ Examples of use
 
 
 
-############
 Download:
-    dn                  Download from Cloud Files to this machine
 
     Download 'test' container to /home/user/mycontainer
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord dn -c test -d /home/user/mycontainer
@@ -109,9 +106,7 @@ Download:
 
 
 
-############
 Upload:
-    up                  Upload from this machine to Cloud Files
 
     Using the example/path structure above with full path:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord up -c newcontainer -d /home/user/mycontainer
@@ -147,9 +142,7 @@ Upload:
 
 
 
-############
 Delete:
-    del                 Delete all objects and the container. Type carefully!
 
     Delete the newcontainer and all the files:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord del -c newcontainer
@@ -158,17 +151,13 @@ Delete:
 
 
 
-############
 Copy (container to container):
-
-    copy                Copy all objects from one container to another container.
 
     Note: This feature has not yet been implemented.
 
 
 
 
-############
 Advanced usage:
 
     Download multiple containers to mycontainers dir:
