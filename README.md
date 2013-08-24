@@ -22,3 +22,110 @@ signal,
 sys,
 time,
 request
+
+
+The intended output is supposed to be very basic so that the output can be piped into other linux programs such as grep,
+while, or for loops etc...
+
+
+Examples of use
+
+hypercf -u username -k qwerty123456abcdefghij09876 -r ord
+
+
+############
+List:
+    ls                  List objects in selected Cloud Files container
+
+    Simple list of containers:
+        hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls
+
+    expected output:
+        test
+        test2
+
+
+    Long list of containers:
+        hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls -l
+
+    expected output:
+        Obj#: 1514       Size:   976.8MB  Name: test
+        Obj#: 1000       Size:   723.2MB  Name: test2
+
+
+    Simple list of objects in 'test' container:
+        hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls -c test
+
+    expected output:
+        /example/path/078_max.jpg
+        /example/path/083_max.jpg
+        /example/path/093_max.jpg
+        /example/path/095_max.jpg
+        /example/path/096_max.jpg
+        /example/path/0IYXX.jpg
+        /example/path/0JSAnbM.jpg
+
+
+    Long list of object in 'test' container:
+        hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls -l
+
+    expected output:
+        Tue, 30 Jul 2013 00:01:03 GMT    425.3KB  /example/path/078_max.jpg
+        Tue, 30 Jul 2013 00:01:04 GMT    165.9KB  /example/path/083_max.jpg
+        Tue, 30 Jul 2013 00:01:06 GMT    140.5KB  /example/path/093_max.jpg
+        Tue, 30 Jul 2013 00:01:07 GMT    456.1KB  /example/path/095_max.jpg
+        Tue, 30 Jul 2013 00:01:08 GMT    118.8KB  /example/path/096_max.jpg
+        Tue, 30 Jul 2013 00:01:17 GMT    231.3KB  /example/path/0IYXX.jpg
+        Tue, 30 Jul 2013 00:01:19 GMT    702.5KB  /example/path/0JSAnbM.jpg
+
+
+    Long list of containers with 'grep' (applies to container names):
+        hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls -l -g t2
+
+    expected output:
+        Obj#: 1000       Size:   723.2MB  Name: test2
+
+
+
+
+############
+Download:
+    dn                  Download from Cloud Files to this machine
+
+    Download 'test' container to /home/user/mycontainer
+        hypercf -u username -k qwerty123456abcdefghij09876 -r ord dn -c test -d /home/user/mycontainer
+
+    expected dir/file creation:
+        mycontainer-|
+                    |-example-|
+                              |-path
+                                  |
+                                078_max.jpg
+                                083_max.jpg
+                                093_max.jpg
+                                095_max.jpg
+                                096_max.jpg
+                                0IYXX.jpg
+                                0JSAnbM.jpg
+
+    Note: the base directory, '/home/user/mycontainer' must already exist.
+
+
+
+
+############
+Upload:
+    up                  Upload from this machine to Cloud Files
+
+    Using the example/path structure above with full path:
+        hypercf -u username -k qwerty123456abcdefghij09876 -r ord up -c newcontainer -d /home/user/mycontainer
+
+
+
+
+
+
+
+    del                 Delete all objects and the container. Type carefully!
+    copy                Copy all objects from one container to another
+                        container.

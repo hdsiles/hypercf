@@ -260,6 +260,8 @@ def uploadObjects(path, progressCount):
         urlfile = urlfile.strip('/')
     if urlfile.startswith('./'):
         urlfile = urlfile.strip('./')
+    if urlfile.startswith('../'):
+        urlfile = urlfile.strip('../')
     url = (authority + '/' + urllib2.quote(container) + '/' + urlfile)
     headers = {'X-Auth-Token': authdata['token'],  'Connection': 'Keep-Alive'}
     reqObj = Requests(container)
@@ -412,7 +414,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Command line options')
     parser.add_argument('-u', '--user', required=True, help='Account Username')
     parser.add_argument('-k', '--key', required=True, help='Account API-KEY')
-    parser.add_argument('-r', '--reg', required=True, choices=['dfw', 'lon', 'ord', 'syd'], help='Region / DataCenter')
+    parser.add_argument('-r', '--reg', required=True, choices=['dfw', 'iad', 'lon', 'ord', 'syd'], help='Region / DataCenter')
     parser.add_argument('-s', '--snet', action='store_true', help='Use ServiceNet, aka 10.x.x.x addresses, instead of public')
     display_group = parser.add_mutually_exclusive_group()
     display_group.add_argument('-v', '--verbose', action='store_true', help='Show more data')
