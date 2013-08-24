@@ -28,9 +28,11 @@ The intended output is supposed to be very basic so that the output can be piped
 while, or for loops etc...
 
 
-Examples of use...
+
+
 
 List:
+
     Simple list of containers:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls
 
@@ -81,8 +83,8 @@ List:
 
 
 
-
 Download:
+
     Download 'test' container to /home/user/mycontainer
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord dn -c test -d /home/user/mycontainer
 
@@ -104,7 +106,9 @@ Download:
 
 
 
+
 Upload:
+
     Using the example/path structure above with full path:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord up -c newcontainer -d /home/user/mycontainer
 
@@ -137,9 +141,12 @@ Upload:
 
 
 
+
 Delete:
+
     Delete the newcontainer and all the files:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord del -c newcontainer
+
 
 
 
