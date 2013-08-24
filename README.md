@@ -120,12 +120,62 @@ Upload:
     Using the example/path structure above with full path:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord up -c newcontainer -d /home/user/mycontainer
 
+    expected container object output:
+        home/user/mycontainer/example/path/078_max.jpg
+        home/user/mycontainer/example/path/083_max.jpg
+        home/user/mycontainer/example/path/093_max.jpg
+        home/user/mycontainer/example/path/095_max.jpg
+        home/user/mycontainer/example/path/096_max.jpg
+        home/user/mycontainer/example/path/0IYXX.jpg
+        home/user/mycontainer/example/path/0JSAnbM.jpg
+
+
+    Using the example/path structure with relative path from /home/user/mycontainer:
+        hypercf -u username -k qwerty123456abcdefghij09876 -r ord up -c newcontainer -d .
+
+    expected container object output:
+        example/path/078_max.jpg
+        example/path/083_max.jpg
+        example/path/093_max.jpg
+        example/path/095_max.jpg
+        example/path/096_max.jpg
+        example/path/0IYXX.jpg
+        example/path/0JSAnbM.jpg
+
+
+    Note: The 'path' info of the object will always use the directory (-d) as the root of the path info.
+    Note: The ../   ./   .  will be removed from the leading part of the object path. This allows the download to
+          always be relative the the base path you use when downloading.
 
 
 
 
 
-
+############
+Delete:
     del                 Delete all objects and the container. Type carefully!
-    copy                Copy all objects from one container to another
-                        container.
+
+    Delete the newcontainer and all the files:
+        hypercf -u username -k qwerty123456abcdefghij09876 -r ord del -c newcontainer
+
+
+
+
+
+############
+Copy (container to container):
+
+    copy                Copy all objects from one container to another container.
+
+    Note: This feature has not yet been implemented.
+
+
+
+
+############
+Advanced usage:
+
+    Download multiple containers to mycontainers dir:
+        hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls | while read cont;do hypercf -u username -k qwerty123456abcdefghij09876 -r ord dn -c $cont -d /home/user/mycontainer;done
+
+
