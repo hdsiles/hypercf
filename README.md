@@ -30,12 +30,8 @@ while, or for loops etc...
 
 Examples of use
 
-hypercf -u username -k qwerty123456abcdefghij09876 -r ord
-
-
-############
-List:
-    ls                  List objects in selected Cloud Files container
+    List:
+        ls                  List objects in selected Cloud Files container
 
     Simple list of containers:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls
