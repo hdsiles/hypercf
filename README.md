@@ -28,7 +28,7 @@ The intended output is supposed to be very basic so that the output can be piped
 while, or for loops etc...
 
 
-Examples of use
+Examples of use:
 
 List:
     Simple list of containers:
@@ -132,18 +132,14 @@ Upload:
 
 
     Note: The 'path' info of the object will always use the directory (-d) as the root of the path info.
-    Note: The ../   ./   .  will be removed from the leading part of the object path. This allows the download to
-          always be relative the the base path you use when downloading.
-
-
+    Note: The ../   ./   .  will be removed from the leading part of the object path. This allows the download
+          to always be relative the the base path you use when downloading.
 
 
 
 Delete:
     Delete the newcontainer and all the files:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord del -c newcontainer
-
-
 
 
 
@@ -154,7 +150,6 @@ Copy (container to container):
 
 
 Advanced usage:
-    Download multiple containers to mycontainers dir:
+    Download multiple containers to mycontainers dir (this one will d/l them all):
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls | while read cont;do hypercf -u username -k qwerty123456abcdefghij09876 -r ord dn -c $cont -d /home/user/mycontainer;done
-
 
