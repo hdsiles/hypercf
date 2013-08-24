@@ -151,12 +151,14 @@ Delete:
 
 
 Copy (container to container):
+
     Note: This feature has not yet been implemented.
 
 
 
 
 Advanced usage:
+
     Download multiple containers to mycontainers dir (this one will d/l them all):
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls | while read cont;do hypercf -u username -k qwerty123456abcdefghij09876 -r ord dn -c $cont -d /home/user/mycontainer;done
 
