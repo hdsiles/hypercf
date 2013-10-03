@@ -56,24 +56,24 @@ class Requests(object):
         else:
             dataVal = None
         while url:
-            try:
-                resp = requestType(url, headers=headers, stream=streamVal, data=dataVal)
-            except requests.exceptions.HTTPError:
-                if e.code == 401:
-                    print 'Error 401, re-authenticating'
-                    authdata = Authentication().cloudFiles(dict_args)
-                    continue
-                elif e.code == 404:
-                    print ('Error 404 Not Found' + url)
-                    return
-                else:
-                    exit('Error communicating with CloudFiles' + e.code)
+            resp = requestType(url, headers=headers, stream=streamVal, data=dataVal)
+            rcode = resp.status_code
 
-            if requestType == requests.get and data:
-                with open(data, "wb") as local_file:
-                    local_file.write(resp.content)
-                    local_file.close()
-            return resp
+            if rcode == 401:
+                print 'Error 401, re-authenticating'
+                authdata = Authentication().cloudFiles(dict_args)
+                continue
+            elif rcode == 404:
+                print ('Error 404 Not Found' + url)
+                return
+            elif rcode >= 300:
+                exit('Error communicating with CloudFiles %s' % rcode)
+            else :
+                if requestType == requests.get and data:
+                    with open(data, "wb") as local_file:
+                        local_file.write(resp.content)
+                        local_file.close()
+                return resp
 
 
 
@@ -176,7 +176,6 @@ def collectContainerObjects():
                 objectlist.append(obj['name'].encode('utf-8'))
                 lastobject = objectlist[-1]
                 if objCount == objTotal:
-                    gatherObjs = False
                     return objectlist
 
 
@@ -424,6 +423,7 @@ if __name__ == "__main__":
     parser_up = subparsers.add_parser('up', help='Upload from this machine to Cloud Files')
     parser_ls = subparsers.add_parser('ls', help='List objects in selected Cloud Files container')
     parser_del = subparsers.add_parser('del', help='Delete all objects and the container. Type carefully!')
+    parser_batchdel= subparsers.add_parser('batchdel', help='Delete all objects and the container. Type carefully!')
     parser_copy = subparsers.add_parser('copy', help='Copy all objects from one container to another container.')
     parser_dn.add_argument('-d', '--dir', required=True, help='The base directory that all files will be put into')
     parser_dn.add_argument('-c', '--cont', required=True, help='Container name to download files from')
@@ -437,6 +437,13 @@ if __name__ == "__main__":
     parser_ls.add_argument('-p', '--proc', type=IntRange(1, 401), default=ls_del_def, help='1-400 concurrent procs, (default: %(default)s)')
     parser_del.add_argument('-c', '--cont', required=True, help='Container name to delete.')
     parser_del.add_argument('-p', '--proc', type=IntRange(1, 401), default=ls_del_def, help='1-400 concurrent procs, (default: %(default)s)')
+
+
+    parser_batchdel.add_argument('-c', '--cont', required=True, help='Container name containing objects to delete.')
+    parser_batchdel.add_argument('-f', '--file', required=True, help='objects in a file to pull in and delete')
+    parser_batchdel.add_argument('-p', '--proc', type=IntRange(1, 401), default=ls_del_def, help='1-400 concurrent procs, (default: %(default)s)')
+
+
 
     args = parser.parse_args()
     args.reg = args.reg.upper()
@@ -504,5 +511,14 @@ if __name__ == "__main__":
             jobSpooler(deleteObjects, objectlist)
         deleteContainer()
 
+    # ___ Delete container and objects ___
+    objectlist = []
+    if (args.subparser_name == 'batchdel'):
+        with open(args.file, 'r') as objline:
+            for line in objline:
+                objectlist.append(line.rstrip('\n'))
+        objTotal = len(objectlist)
+        if objectlist:
+            jobSpooler(deleteObjects, objectlist)
 
 
