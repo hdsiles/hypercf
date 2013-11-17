@@ -286,6 +286,7 @@ def createContainer():
 
 #----------------------------------------------------------------------
 def collectFileData(rootdir):
+    global utf8log
     localfiles = []
     for folder, subs, files in os.walk(rootdir):
         for filename in files:
@@ -293,7 +294,11 @@ def collectFileData(rootdir):
             try:
                 localfiles.append(path.encode('utf-8'))
             except:
-                exit("Unable to encode to utf-8: %s" % path)
+                if args.logfile:
+                    with open(args.logfile, "a") as log:
+                        log.write(path)
+                print "Non-UTF-8: %s" % path
+                pass
     return localfiles
 
 
@@ -431,6 +436,7 @@ if __name__ == "__main__":
     parser_up.add_argument('-d', '--dir', required=True, help='The directory and everything recursivly added to specified container')
     parser_up.add_argument('-c', '--cont', required=True, help='Container name to download files from.')
     parser_up.add_argument('-p', '--proc', type=IntRange(1, 101), default=up_dn_def, help='1-100 concurrent procs, (default: %(default)s)')
+    parser_up.add_argument('-l', '--logfile', help='/path/to/logfile.txt to append local utf-8 fail messages to')
     parser_ls.add_argument('-l', '--long', action='store_true', help='Long or detailed info, like from the *nix commandline')
     parser_ls.add_argument('-g', '--grep', help='Filter results. Handy with the -l flag')
     parser_ls.add_argument('-c', '--cont', help='Container name to list objects from')
@@ -438,12 +444,9 @@ if __name__ == "__main__":
     parser_del.add_argument('-c', '--cont', required=True, help='Container name to delete.')
     parser_del.add_argument('-p', '--proc', type=IntRange(1, 401), default=ls_del_def, help='1-400 concurrent procs, (default: %(default)s)')
 
-
     parser_batchdel.add_argument('-c', '--cont', required=True, help='Container name containing objects to delete.')
     parser_batchdel.add_argument('-f', '--file', required=True, help='objects in a file to pull in and delete')
     parser_batchdel.add_argument('-p', '--proc', type=IntRange(1, 401), default=ls_del_def, help='1-400 concurrent procs, (default: %(default)s)')
-
-
 
     args = parser.parse_args()
     args.reg = args.reg.upper()
@@ -499,6 +502,7 @@ if __name__ == "__main__":
 
     # ___ Upload from localhost to Container ___
     if (args.subparser_name == 'up'):
+        utf8log = args.logfile
         localfiles = collectFileData(args.dir)
         objTotal = len(localfiles)
         createContainer()
