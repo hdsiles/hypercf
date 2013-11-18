@@ -274,7 +274,7 @@ def create_container():
     if args.quiet:
         pass
     elif args.verbose:
-        print ("Creating %s container" % (container))
+        print "Creating %s container" % container
 
     url = (authority + '/' + urllib2.quote(container))
     headers = {'X-Auth-Token': auth_data['token'],  'Connection': 'Keep-Alive'}
