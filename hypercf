@@ -9,7 +9,6 @@ import requests
 import time
 import sys
 
-
 ########################################################################
 class Authentication(object):
 
@@ -48,7 +47,6 @@ class Authentication(object):
 ########################################################################
 class Requests(object):
 
-    #def __init__(self, container=None):
     def __init__(self):
         pass
 
@@ -70,6 +68,11 @@ class Requests(object):
                 continue
             elif rcode == 404:
                 return ('Error %s Not Found: ' % rcode), remote_size
+            elif rcode >= 500:
+                #print resp.raise_for_status()
+                print 'Error %s, Pause 2s: %s' % (rcode, url)
+                time.sleep(2)
+                continue
             elif rcode >= 300:
                 sys.exit('Error communicating with CloudFiles %s' % rcode)
             else:
@@ -161,7 +164,6 @@ def collect_containers(auth_obj):
         if len(json_response) > 0:
             for cont in json_response:
                 cont_count += 1
-                #container_list.append(cont['name'].encode('utf-8'))
                 container_list.append(cont['name'])
                 previous_container = container_list[-1]
                 if cont_count == cont_total:
@@ -181,7 +183,6 @@ def collect_container_objects(auth_obj=None, c_name=None):
     sys.stdout.write(" Collecting ranges: %s - %s \r" % (mark_start, mark_end))
     sys.stdout.flush()
     while gather_objs:
-        #url = (auth_obj.swift_url + '/' + c_name.encode('utf-8') + '/?limit=10000&format=json')
         url = (auth_obj.swift_url + '/' + c_name + '/?limit=10000&format=json')
         if last_object:
             url = (url + '&marker=' + last_object)
@@ -219,7 +220,6 @@ def collect_container_objects(auth_obj=None, c_name=None):
 
 #----------------------------------------------------------------------
 def download_objects(**kw):
-    #var = kw['var'].encode('utf-8', 'replace')
     var = kw['var']
     full_path = (kw['dest'] + '/' + kw['container'] + '/' + var)
     dir_path = os.path.dirname(full_path)
@@ -246,10 +246,13 @@ def delete_objects(**kw):
 
 #----------------------------------------------------------------------
 def copy_objects(**kw):
-    url = (kw['auth_obj'].swift_url + '/' + kw['container'] + '/' + kw['var'])
-    headers = {'X-Auth-Token': kw['auth_obj'].token,  'Connection': 'Keep-Alive', 'Destination': kw['dest']}
+    source_obj = kw['container'] + '/' + kw['var']
+    dest_obj = kw['dest']
+    url = (kw['auth_obj'].swift_url + '/' + dest_obj)
+    headers = {'X-Auth-Token': kw['auth_obj'].token, 'Connection': 'Keep-Alive',
+               'X-Copy-From': source_obj, 'Content-Length': 0}
     req_obj = Requests()
-    resp, r_size = req_obj.run_queries(url, headers, requests.get())
+    resp, r_size = req_obj.run_queries(url, headers, requests.put)
     return kw['prog_count'], r_size, kw['var']
 
 
@@ -320,13 +323,11 @@ def collect_container_headers(**kw):
 
 #----------------------------------------------------------------------
 def collect_object_headers(**kw):
-    #this_obj = kw['var'].encode('utf-8', 'replace')
     this_obj = kw['var']
     url = (kw['auth_obj'].swift_url + '/' + kw['container'] + '/' + this_obj)
     headers = {'X-Auth-Token': kw['auth_obj'].token,  'Connection': 'Keep-Alive', 'Content-Type': 'application/json'}
     req_obj = Requests()
     resp, r_size = req_obj.run_queries(url, headers, requests.head)
-#    print "%s %s %s" % (this_obj, resp, r_size)
     if resp == 'Error 404 Not Found: ':
         obj_date = resp
         human_size = None
@@ -362,7 +363,9 @@ def print_objs(c_name=None, obj_lst=None):
         c_obj = c_obj.encode('utf-8', 'replace')
         if len(args.cont) > 1:
             c_obj = "%s:%s" % (c_name, c_obj)
-        print "%s %s" % (num, c_obj)
+            if args.numbered:
+                print "%s " % num,
+        print "%s" % c_obj
 
 
 def batch_dn_from_cf(auth_obj=None, c_name=None, obj_lst=None, dest=None):
@@ -488,43 +491,57 @@ def del_from_cf(auth_obj, containers):
         delete_container(auth_obj=auth_obj, container=c_name)
 
 
-def copy_cf_obj(auth_obj, containers, dest):
+def copy_cf_obj(auth_obj, objects):
     o_dict = {}
-    grp_total = len(containers)
-    grp_count = 1
-    for c_name in containers:
-        if ':' in c_name:
-            c_name, obj_file = c_name.split(':', 1)
-            if not c_name in o_dict:
-                o_dict[c_name] = [obj_file]
-            else:
-                obj_files = list(o_dict[c_name])
-                obj_files.append(obj_file)
-                o_dict[c_name] = obj_files
+    for o_cnt, cp_line in enumerate(objects, start=1):
+        if not '=' in cp_line:
+            sys.exit('1) Not valid: %s' % cp_line)
+
+        src_dest = cp_line.split('=')
+        src = src_dest[0].strip()
+        dest = src_dest[1].strip()
+
+        if not ':' in (src and dest):
+            sys.exit('Syntax: -o "cont:obj = cont:obj" OR -o "cont:obj = cont:" OR -o "cont:obj = :obj"\n"%s"'
+                     % cp_line)
+        src = [src.strip() for src in src.split(':')]
+        dest = [dest.strip() for dest in dest.split(':')]
+        if not dest[0]:
+            dest[0] = src[0]
+        if not dest[1]:
+            dest[1] = src[1]
+        o_dict[str(o_cnt)] = [src[0], src[1], dest[0], dest[1]]
+
     if o_dict:
-        for grp_count, c_name in enumerate(o_dict, start=1):
-            job_spooler(auth_obj=auth_obj, target_def=copy_objects, container=c_name, var_list=list(o_dict[c_name]),
-                        item_count=grp_count, item_total=grp_total, dest=dest)
-            time.sleep(1)
+        copy_spooler(auth_obj=auth_obj, target_def=copy_objects, var_dict=o_dict)
+        time.sleep(1)
 
-    for grp_count, c_name in enumerate(containers, start=grp_count):
-        o_lst = None
-        if not ':' in c_name:
-            o_lst = collect_container_objects(auth_obj, c_name)
+
+def copy_cf_cont(auth_obj, containers):
+    c_dict = {}
+    for c_cnt, cp_line in enumerate(containers, start=1):
+        if not '=' in cp_line:
+            sys.exit('Syntax: -c "source_cont = destination_cont"\n"%s"' % cp_line)
+        src_dest = cp_line.split('=')
+        src = src_dest[0].strip()
+        dest = src_dest[1].strip()
+        c_dict[str(c_cnt)] = [src, dest]
+
+    grp_total = len(c_dict)
+    o_dict = {}
+    for grp_count in c_dict:
+        o_lst = collect_container_objects(auth_obj, c_dict[grp_count][0])
         if o_lst:
-            job_spooler(auth_obj=auth_obj, target_def=copy_objects, container=c_name,
-                        var_list=o_lst, item_count=grp_count, item_total=grp_total)
-
+            for cnt, obj in enumerate(o_lst):
+                o_dict[cnt] = [c_dict[grp_count][0], obj, c_dict[grp_count][1], obj]
+            copy_spooler(auth_obj=auth_obj, target_def=copy_objects, var_dict=o_dict)
 
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 if __name__ == "__main__":
-
     def collect_args_input():
         #------ Calculate Cpu Info ----------------------------------------------
         cpu_num = int(multiprocessing.cpu_count())
-        up_dn_def = (cpu_num * 10)
-        ls_del_def = (cpu_num * 20)
 
         #------ Passed Arguments ------------------------------------------------
         main_par = argparse.ArgumentParser(description='Default & Required Options')
@@ -534,8 +551,7 @@ if __name__ == "__main__":
         main_par.add_argument('-s', '--snet', action='store_true',
                               help='Use ServiceNet, aka 10.x.x.x IPs, instead of public')
         main_par.add_argument('-p', '--proc', type=int,
-                              help='# of Concurrent Processes. This machine defaults: (list/delete %s)(other %s)' %
-                                   (ls_del_def, up_dn_def))
+                              help='# of Concurrent Processes. This machine defaults to %s processes' % cpu_num)
         verbosity_group = main_par.add_mutually_exclusive_group()
         verbosity_group.add_argument('-v', '--verbose', action='store_true', help='Show more data')
         verbosity_group.add_argument('-q', '--quiet', action='store_true', help='Show only errors')
@@ -548,11 +564,13 @@ if __name__ == "__main__":
 
         parser_ls.add_argument('-l', '--long', action='store_true',
                                help='Long or detailed info, like from the *nix commandline')
+        parser_ls.add_argument('-n', '--numbered', action='store_true', help='Add numbered count per line item printed')
 
         batch_group = parser_ls.add_mutually_exclusive_group()
-        batch_group.add_argument('--batch_dn', help='Batch download objects to existing local directory')
-        batch_group.add_argument('--batch_del', action='store_true', help='Batch delete objects that get displayed.')
-        batch_group.add_argument('--batch_ls', choices=['dn', 'del'],
+        batch_group.add_argument('--batch_dn', help='Download selected to existing directory instead of displaying')
+        batch_group.add_argument('--batch_del', action='store_true', help='Delete selected instead of displaying')
+        batch_group.add_argument('--batch_cp', help='Copy selected instead displaying')
+        batch_group.add_argument('--batch_ls', choices=['dn', 'del', 'cp'],
                                  help='Display output with options for easier piping or batch actions')
 
         parser_dn = sub_pars.add_parser('dn', help='Download from Cloud Files to this machine')
@@ -572,16 +590,15 @@ if __name__ == "__main__":
         parser_del.add_argument('-c', '--cont', required=True, action='append', help='Container name to delete.')
 
         parser_copy = sub_pars.add_parser('cp', help='Copy object or objects.')
-        parser_copy.add_argument('-c', '--cont', required=True, action='append',
-                                 help='Source container or container:object')
-        parser_copy.add_argument('-w', '--write', required=True, help='Destination container or container:object')
+        parser_copy.add_argument('-c', '--cont', action='append',
+                                 help='Copy entire container: -c "source = destination"')
+        parser_copy.add_argument('-o', '--object', action='append',
+                                 help='Copy per object: -o "container:my/object/name = container:object/new/name"')
 
         args = main_par.parse_args()
         args.reg = args.reg.upper()
         if not args.proc:
-            args.proc = up_dn_def
-            if args.subparser_name in ['ls', 'del', 'rm']:
-                args.proc = ls_del_def
+            args.proc = cpu_num
         return args
 
     #----------------------------------------------------------------------
@@ -609,17 +626,19 @@ if __name__ == "__main__":
 
         max_jobs = num_jobs
         print_count = 1
+        itm_cnt = ''
         while print_count <= max_jobs:
             if num_jobs > 0:
                 tr = results.get(timeout=5)
+                if args.numbered:
+                    itm_cnt = "%s " % tr[0]
                 if args.cont and len(args.cont) > 1:
-                    print_dict[int(tr[0])] = "%s %s:%-29s  %9s  %s" % (tr[0], tr[1], tr[2], tr[3], tr[4])
+                    print_dict[int(tr[0])] = "%s%s:%-29s  %9s  %s" % (itm_cnt, tr[1], tr[2], tr[3], tr[4])
                 elif args.cont:
-                    print_dict[int(tr[0])] = "%s %-29s  %9s  %s" % (tr[0], tr[2], tr[3], tr[4])
+                    print_dict[int(tr[0])] = "%s%-29s  %9s  %s" % (itm_cnt, tr[2], tr[3], tr[4])
                 else:
-                    print_dict[int(tr[0])] = "%s Obj#: %-9s  Date: %s GMT   Size: %9s  Name: %s" % (tr[0],
-                                                                                                    tr[1], tr[2], tr[3],
-                                                                                                    tr[4].encode('utf-8', 'replace'))
+                    print_dict[int(tr[0])] = "%sObj#: %-9s  Date: %s GMT   Size: %9s  Name: %s" % (
+                        itm_cnt, tr[1], tr[2], tr[3], tr[4].encode('utf-8', 'replace'))
                 num_jobs -= 1
             if print_count in sorted(print_dict):
                 print print_dict[print_count]
@@ -659,12 +678,49 @@ if __name__ == "__main__":
             num_jobs -= 1
         return
 
+    #----------------------------------------------------------------------
+    def copy_spooler(auth_obj=None, target_def=None, var_dict=None):
+        manager = multiprocessing.Manager()
+        manager.Queue()
+        tasks = manager.Queue()
+        results = manager.Queue()
+        consumers = [Consumer(tasks, results) for i in xrange(auth_obj.proc_count)]
+        for w in consumers:
+            w.start()
 
+        cont_created = []
+        num_jobs = len(var_dict)
+        for key in var_dict:
+            progress_count = key
+            container = var_dict[key][0]
+            var = var_dict[key][1]
+            new_cont = var_dict[key][2]
+            dest = new_cont + '/' + var_dict[key][3]
+            if not new_cont in cont_created:
+                create_container(auth_obj, new_cont)
+                cont_created.append(new_cont)
+
+            tasks.put(AlterationTask(auth_obj, var, progress_count, dest, container, target_def))
+        # Add a poison pill for each consumer
+        for i in xrange(args.proc):
+            tasks.put(None)
+
+        max_jobs = num_jobs
+        while num_jobs:
+            tr = results.get()
+            if hasattr(auth_obj, 'quiet'):
+                pass
+            elif hasattr(auth_obj, 'verbose'):
+                print "group: %s of %s :: remain: %s of %s: %s" % (None, None, num_jobs, max_jobs, tr[2])
+            else:
+                sys.stdout.write(" group: %s of %s :: remain: %s of %s: %s \r" % (None, None, num_jobs,
+                                                                                  max_jobs, tr[2]))
+            num_jobs -= 1
+        return
 
     auth_id_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
     # ___ Collect Arg-parse data, and cpu info ___
     args = collect_args_input()
-#    dict_args = vars(args)
 
     # ___ Authenticate & build Authority portion of URL ___
     auth_object = Authentication(args.user, args.key, auth_id_url, args.reg, args.proc, use_snet=args.snet)
@@ -679,6 +735,8 @@ if __name__ == "__main__":
         setattr(auth_object, 'batch_del', True)
     if hasattr(args, 'batch_dn'):
         setattr(auth_object, 'batch_dn', args.batch_dn)
+    if hasattr(args, 'batch_cp'):
+        setattr(auth_object, 'batch_cp', args.batch_cp)
 
     # ___ List Containers or Objects ___
     if args.subparser_name == 'ls':
@@ -713,5 +771,8 @@ if __name__ == "__main__":
 
     # ___ Copy container / container:object ___
     if args.subparser_name == 'cp':
-        copy_cf_obj(auth_object, args.cont)
+        if args.object:
+            copy_cf_obj(auth_object, args.object)
+        if args.cont:
+            copy_cf_cont(auth_object, args.cont)
         sys.exit()
