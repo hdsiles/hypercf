@@ -189,6 +189,9 @@ def collect_container_objects(auth_obj=None, c_name=None):
     obj_count = 0
     gather_objs = True
     find_obj_total = True
+    if args.number:
+        find_obj_total = False
+        obj_total = args.number
     object_list = []
     mark_start = 1
     mark_end = 10000
@@ -476,10 +479,7 @@ def up_to_cf(auth_obj, local_dir, container):
 
 def del_from_cf(auth_obj, containers):
     o_dict = {}
-    if args.number:
-        grp_total = args.number
-    else:
-        grp_total = len(containers)
+    grp_total = len(containers)
     grp_count = 1
     for c_name in containers:
         if ':' in c_name:
