@@ -604,7 +604,7 @@ if __name__ == "__main__":
 
         parser_del = sub_pars.add_parser('del', help='Delete all objects and the container. Type carefully!')
         parser_del.add_argument('-c', '--cont', required=True, action='append', help='Container name to delete.')
-        parser_del.add_argument('-n', '--number', required=True, action='append', help='Process this number in chunks.')
+        parser_del.add_argument('-N', '--number', required=True, type=int, help='Process this number in chunks.')
 
         parser_copy = sub_pars.add_parser('cp', help='Copy object or objects.')
         parser_copy.add_argument('-c', '--cont', action='append',
