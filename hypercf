@@ -1,4 +1,4 @@
-#!/usr/bin/env python -u
+#!/usr/bin/python -u
 #!*-* coding:utf-8 *-*
 
 import argparse
@@ -57,7 +57,9 @@ class Requests(object):
             data_val = data
         else:
             data_val = None
+        time_count = 0
         while url:
+            time_count += 5
             resp = request_type(url.replace('%', '%25'), headers=headers, stream=stream_val, data=data_val)
             rcode = resp.status_code
             remote_size = 0
@@ -68,12 +70,22 @@ class Requests(object):
                 continue
             elif rcode == 404:
                 return ('Error %s Not Found: ' % rcode), remote_size
+            elif rcode == 408:
+                print " %s Timeout Error. %ss delay & retry: %s \n" % (rcode, str(time_count), url)
+                time.sleep(time_count)
+                auth_object = Authentication(args.user, args.key, auth_id_url, args.reg, args.proc, use_snet=args.snet)
+                auth_object.cloud_files_service()
+                continue
             elif rcode >= 500:
                 #print resp.raise_for_status()
-                print 'Error %s, Pause 2s: %s' % (rcode, url)
-                time.sleep(2)
+                print " Error %s, Pause %ss: %s \n" % (rcode, str(time_count), url)
+                auth_object = Authentication(args.user, args.key, auth_id_url, args.reg, args.proc, use_snet=args.snet)
+                auth_object.cloud_files_service()
+                time.sleep(time_count)
                 continue
             elif rcode >= 300:
+                print 'Error %s ' % rcode,
+                print resp.raise_for_status()
                 sys.exit('Error communicating with CloudFiles %s' % rcode)
             else:
                 if request_type == requests.get and data:
@@ -361,10 +373,10 @@ def print_objs(c_name=None, obj_lst=None):
     c_name = c_name.encode('utf-8', 'replace')
     for num, c_obj in enumerate(obj_lst, start=1):
         c_obj = c_obj.encode('utf-8', 'replace')
+        if args.numbered:
+            print "%s" % num,
         if len(args.cont) > 1:
             c_obj = "%s:%s" % (c_name, c_obj)
-            if args.numbered:
-                print "%s " % num,
         print "%s" % c_obj
 
 
@@ -383,6 +395,7 @@ def ls_objects(auth_obj, containers):
     for c_name in containers:
         obj_lst = collect_container_objects(auth_obj=auth_obj, c_name=c_name)
         if obj_lst:
+            print
             if args.grep:
                 obj_lst = grep_by(obj_lst, args.grep)
                 if not obj_lst:
@@ -463,7 +476,10 @@ def up_to_cf(auth_obj, local_dir, container):
 
 def del_from_cf(auth_obj, containers):
     o_dict = {}
-    grp_total = len(containers)
+    if args.number:
+        grp_total = args.number
+    else:
+        grp_total = len(containers)
     grp_count = 1
     for c_name in containers:
         if ':' in c_name:
@@ -588,6 +604,7 @@ if __name__ == "__main__":
 
         parser_del = sub_pars.add_parser('del', help='Delete all objects and the container. Type carefully!')
         parser_del.add_argument('-c', '--cont', required=True, action='append', help='Container name to delete.')
+        parser_del.add_argument('-n', '--number', required=True, action='append', help='Process this number in chunks.')
 
         parser_copy = sub_pars.add_parser('cp', help='Copy object or objects.')
         parser_copy.add_argument('-c', '--cont', action='append',
@@ -629,7 +646,7 @@ if __name__ == "__main__":
         itm_cnt = ''
         while print_count <= max_jobs:
             if num_jobs > 0:
-                tr = results.get(timeout=5)
+                tr = results.get(timeout=30)
                 if args.numbered:
                     itm_cnt = "%s " % tr[0]
                 if args.cont and len(args.cont) > 1:
