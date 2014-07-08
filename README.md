@@ -165,7 +165,7 @@ Delete:
 Copy (container to container):
 
     Copy entire container:
-        hypercf -u username -k qwerty123456abcdefghij09876 -r ord cp -o "source-container:my/path/obj.jpg = destination-container:my/new/path/newobj.jpg"
+        hypercf -u username -k qwerty123456abcdefghij09876 -r ord cp -o: "source-container:my/path/obj.jpg = destination-container:my/new/path/newobj.jpg"
 
     Copy per object:
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord cp -o "source-container:my/path/obj.jpg = destination-container:my/new/path/newobj.jpg"
@@ -179,4 +179,6 @@ Advanced usage (example below still works, but you can now append more than one 
 
     Download multiple containers to mycontainers dir (this one will d/l them all):
         hypercf -u username -k qwerty123456abcdefghij09876 -r ord ls | while read cont;do hypercf -u username -k qwerty123456abcdefghij09876 -r ord dn -c $cont -d /home/user/mycontainer;done
+
+
 
